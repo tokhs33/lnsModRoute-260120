@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.ciel.microservices</groupId>
+	<artifactId>mod_route</artifactId>
+	<version>0.9.7-SNAPSHOT</version>
+	<name>mod_route</name>
+	<description>MOD Router with LNS PDPTW Optimizer</description>
+    <profiles>
+        <!-- 기본 프로파일: 환경 변수가 없을 때 -->
+        <profile>
+            <id>default-path</id>
+            <activation>
+                <property>
+                    <name>!env.LNSPDPTW_PATH</name> <!-- 환경 변수가 없는 경우 활성화 -->
+                </property>
+            </activation>
+            <properties>
+                <lnspdptw.path>/usr/local</lnspdptw.path>
+            </properties>
+        </profile>
+        <!-- 환경 변수가 있는 경우 -->
+        <profile>
+            <id>env-path</id>
+            <activation>
+                <property>
+                    <name>env.LNSPDPTW_PATH</name> <!-- 환경 변수가 있는 경우 활성화 -->
+                </property>
+            </activation>
+            <properties>
+                <lnspdptw.path>${env.LNSPDPTW_PATH}</lnspdptw.path>
+            </properties>
+        </profile>
+    </profiles>
+	<properties>
+		<java.version>17</java.version>
+        <lnspdptw.path>/usr/local</lnspdptw.path>
+	</properties>
+    <dependencies>
+        <dependency>
+            <groupId>com.googlecode.json-simple</groupId>
+            <artifactId>json-simple</artifactId>
+            <version>1.1.1</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <!-- 특정 디렉토리를 지우기 위한 maven-antrun-plugin 설정 -->
+                    <execution>
+                        <id>clean-directory</id>
+                        <phase>generate-sources</phase>
+                        <configuration>
+                            <target>
+                                <delete dir="${project.build.directory}/native"/>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- 파일 복사를 위한 maven-antrun-plugin 설정 -->
+                    <execution>
+                        <id>copy-files</id>
+                        <phase>prepare-package</phase>
+                        <configuration>
+                            <target>
+                                <copy todir="${project.build.outputDirectory}/native/lib" failonerror="false" >
+                                    <fileset dir="${project.build.directory}/native/lib">
+                                        <include name="*.so" />
+                                        <include name="*.dll" />
+                                        <include name="*.dylib" />
+                                    </fileset>
+                                </copy>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- CMake 빌드를 위한 exec-maven-plugin 설정 -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.0.0</version>                
+                <executions>
+                    <!-- CMake configure 단계 -->
+                    <execution>
+                        <id>cmake-configure</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>cmake</executable>
+                            <workingDirectory>${project.build.directory}/native</workingDirectory>
+                            <arguments>
+                                <argument>-S</argument>
+                                <argument>${project.basedir}/..</argument>
+                                <argument>-B</argument>
+                                <argument>${project.build.directory}/native</argument>
+                                <argument>-DENABLE_JNI=ON</argument>
+                                <argument>-DCMAKE_BUILD_TYPE=Release</argument>
+                                <argument>-DLNSPDPTW_PATH=${lnspdptw.path}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <!-- CMake build 단계 -->
+                    <execution>
+                        <id>cmake-build</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>cmake</executable>
+                            <workingDirectory>${project.build.directory}/native</workingDirectory>
+                            <arguments>
+                                <argument>--build</argument>
+                                <argument>${project.build.directory}/native</argument>
+                                <argument>--config</argument>
+                                <argument>Release</argument>
+                                <argument>--target</argument>
+                                <argument>lib_jni</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>17</source>
+                    <target>17</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

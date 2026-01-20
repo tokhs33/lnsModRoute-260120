@@ -1,0 +1,456 @@
+openapi: 3.0.0
+info:
+  title: LNS ModRoute API
+  version: 0.9.7
+  description: API for optimizing vehicle routes using LNS algorithm.
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+paths:
+  /api/v1/optimize:
+    post:
+      summary: Optimize vehicle routes
+      description: Solves the vehicle routing problem with the given request data.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModRequest'
+      responses:
+        '200':
+          description: Successful optimization response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OptimizeResponse'
+        '400':
+          description: Bad request or error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/reset:
+    get:
+      summary: Reset route cost cache
+      description: Resets the internal cache for route costs.
+      responses:
+        '200':
+          description: Reset successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+        '400':
+          description: Error during reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/health:
+    get:
+      summary: Health check
+      description: Checks if the service is running.
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+  /api/v1/openapi:
+    get:
+      summary: Get OpenAPI specification
+      description: Returns the OpenAPI JSON specification for this API.
+      responses:
+        '200':
+          description: OpenAPI spec
+          content:
+            application/json:
+              schema:
+                type: object
+components:
+  schemas:
+    ModRequest:
+      type: object
+      description: Request object for route optimization
+      example:
+        vehicle_locs:
+          - supply_idx: "b8617e1f-2602-470f-9b3a-d6cd2d4a6850"
+            capacity: 40
+            lat: 37.512068
+            lng: 126.95969137
+            direction: 108
+          - supply_idx: "d44b1ce8-4cce-45b8-acd0-6971c9bc1a85"
+            capacity: 40
+            lat: 37.51208093
+            lng: 126.9536319
+            direction: 204
+        onboard_demands:
+          - id: "eaf683f8-d760-4c08-b2d8-e1b39dd21dea"
+            supply_idx: "b8617e1f-2602-470f-9b3a-d6cd2d4a6850"
+            demand: 1
+            destination_loc:
+              lat: 37.505911
+              lng: 126.966446
+              direction: 203
+              station_id: "c8833ec8-697c-4f8c-ba74-494ef8954297"
+            eta_to_destination: [0, 892]
+          - id: "a1a2a166-e97d-4cef-9278-b71adfcd52bb"
+            supply_idx: "d44b1ce8-4cce-45b8-acd0-6971c9bc1a85"
+            demand: 1
+            destination_loc:
+              lat: 37.50911421
+              lng: 126.95480368
+              direction: 228
+              station_id: "5f3f3f5e-2f7e-4f4b-9f4a-1e2b3c4d5e6f"
+            eta_to_destination: [0, 755]
+        onboard_waiting_demands:
+          - id: "f4c3b2a1-9e8d-7c6b-5a4f-3e2d1c0b9a8b"
+            supply_idx: "b8617e1f-2602-470f-9b3a-d6cd2d4a6850"
+            demand: 1
+            start_loc:
+              lat: 37.514234
+              lng: 126.961123
+              direction: 150
+              station_id: "d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f90"
+            destination_loc:
+              lat: 37.505911
+              lng: 126.966446
+              direction: 203
+              station_id: "c8833ec8-697c-4f8c-ba74-494ef8954297"
+            eta_to_start: [0, 840]
+            eta_to_destination: [0, -1200]
+        new_demands:
+          - id: "123e4567-e89b-12d3-a456-426614174000"
+            demand: 1
+            start_loc:
+              lat: 37.515678
+              lng: 126.962345
+              direction: 180
+              station_id: "abcdef12-3456-7890-abcd-ef1234567890"
+            destination_loc:
+              lat: 37.50911421
+              lng: 126.95480368
+              direction: 228
+              station_id: "5f3f3f5e-2f7e-4f4b-9f4a-1e2b3c4d5e6f"
+            eta_to_start: [0, 600]
+        assigned:
+          - supply_idx: "b8617e1f-2602-470f-9b3a-d6cd2d4a6850"
+            route_order:
+              - ["eaf683f8-d760-4c08-b2d8-e1b39dd21dea", -1]
+              - ["f4c3b2a1-9e8d-7c6b-5a4f-3e2d1c0b9a8b", 1]
+              - ["f4c3b2a1-9e8d-7c6b-5a4f-3e2d1c0b9a8b", -1]
+            route_times: [207, 1052, 1250]
+            route_distances: [1200, 5800, 7000]
+          - supply_idx: "d44b1ce8-4cce-45b8-acd0-6971c9bc1a85"
+            route_order:
+              - ["a1a2a166-e97d-4cef-9278-b71adfcd52bb", -1]
+            route_times: [755]
+            route_distances: [4500]
+        optimize_type: Time
+      properties:
+        vehicle_locs:
+          type: array
+          description: List of vehicle locations.
+          items:
+            $ref: '#/components/schemas/VehicleLocation'
+        onboard_demands:
+          type: array
+          description: List of onboard demands.
+          items:
+            $ref: '#/components/schemas/OnboardDemand'
+        onboard_waiting_demands:
+          type: array
+          description: List of onboard waiting demands.
+          items:
+            $ref: '#/components/schemas/OnboardWaitingDemand'
+        new_demands:
+          type: array
+          description: List of new demands that have not been assigned to any vehicle yet.
+          items:
+            $ref: '#/components/schemas/NewDemand'
+        assigned:
+          type: array
+          description: List of assigned vehicle routes.
+          items:
+            $ref: '#/components/schemas/VehicleAssigned'
+        optimize_type:
+          type: string
+          enum:
+            - Time
+            - Distance
+            - Co2
+          description: "Optimization type (default: Time)."
+          default: Time
+        max_solution_number:
+          type: integer
+          description: "Maximum number of solutions (default: 0)."
+          default: 0
+        loc_hash:
+          type: string
+          description: "Optional hash string of ModRequest, excluding date_time and eta timewindows. It is a hash of pure type, id, and location information. Internally, hash is not calculated; it is used to check if the hash values are the same to avoid redundant cost calculations when the same results are expected."
+        date_time:
+          type: string
+          description: "Optional date-time string in ISO 8601 format (YYYY-MM-DDThh:mm). Only applies when using Valhalla, and if provided, enables traffic-aware routing for the specified date."
+        max_duration:
+          type: integer
+          description: "Optional maximum duration (in seconds) for the optimization. If not set, the default max duration value configured at runtime is applied."
+      required: []  # 모든 필드가 선택적 (parseRequest에서 기본값 설정)
+    # 하위 스키마 정의
+    VehicleLocation:
+      type: object
+      properties:
+        supply_idx:
+          type: string
+          description: Supply index.
+        capacity:
+          type: integer
+          description: Vehicle capacity.
+        lat:
+          type: number
+          format: float
+          description: Latitude.
+        lng:
+          type: number
+          format: float
+          description: Longitude.
+        direction:
+          type: integer
+        operation_time:
+          type: array
+          items:
+            type: integer
+          maxItems: 2
+          description: "Optional operation time window for the vehicle (array of up to 2 integers: [start_seconds, end_seconds]). If provided, it sets the earliest and latest arrival times for the vehicle."
+      required: [supply_idx, capacity, lat, lng]
+    OnboardDemand:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Demand ID.
+        supply_idx:
+          type: string
+          description: Supply index of the vehicle the demand is currently onboard.
+        demand:
+          type: integer
+          description: "Number of passengers (default: 1)."
+          default: 1
+        destination_loc:
+          $ref: '#/components/schemas/Location'
+        eta_to_destination:
+          type: array
+          items:
+            type: integer
+          maxItems: 2
+          description: "Estimated time of arrival to destination (array of up to 2 integers: [from_seconds, to_seconds]). During optimization, the dispatch is optimized so that the time window falls within this range."
+      required: [id, supply_idx, destination_loc]
+    OnboardWaitingDemand:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Demand ID.
+        supply_idx:
+          type: string
+          description: Supply index of the vehicle the demand is assigned to but not yet onboard.
+        demand:
+          type: integer
+          default: 1
+        start_loc:
+          $ref: '#/components/schemas/Location'
+        destination_loc:
+          $ref: '#/components/schemas/Location'
+        eta_to_start:
+          type: array
+          items:
+            type: integer
+          maxItems: 2
+          description: "Estimated time of arrival to start location (array of up to 2 integers: [from_seconds, to_seconds]). During optimization, the dispatch is optimized so that the time window falls within this range."
+        eta_to_destination:
+          type: array
+          items:
+            type: integer
+          maxItems: 2
+          description: "Estimated time of arrival to destination (array of up to 2 integers: [from_seconds, to_seconds]). During optimization, the dispatch is optimized so that the time window falls within this range. For onboard waiting demands with start_loc, if to_seconds is less than 0, the time window is set so that the destination is reached within -to_seconds after arriving at start_loc. This is necessary because the arrival time at start_loc can change dynamically during optimization, and it limits the time the user spends onboard the vehicle."
+      required: [id, supply_idx, start_loc, destination_loc]
+
+    NewDemand:
+      type: object
+      properties:
+        id:
+          type: string
+        demand:
+          type: integer
+          default: 1
+        start_loc:
+          $ref: '#/components/schemas/Location'
+        destination_loc:
+          $ref: '#/components/schemas/Location'
+        eta_to_start:
+          type: array
+          items:
+            type: integer
+          maxItems: 2
+          description: "Estimated time of arrival to start location (array of up to 2 integers: [from_seconds, to_seconds]). During optimization, the dispatch is optimized so that the time window falls within this range. For new demands, the time window for eta_to_destination is set as follows: if to_seconds is less than 0, the arrival time at start_loc is set to [0, max_time], and the arrival time at destination_loc is set with a max value of (travel time from start_loc to destination_loc) - to_seconds. If to_seconds is greater than 0, the arrival at destination_loc is set to be within (travel time from start_loc to destination_loc) * bypass_ratio after arriving at start_loc."
+      required: [id, start_loc, destination_loc]
+
+    VehicleAssigned:
+      type: object
+      properties:
+        supply_idx:
+          type: string
+        route_order:
+          type: array
+          description: Array of [demand id, demand value] pairs. For pickup, use demand value; for dropoff, use -demand value.
+          items:
+            type: array
+            items:
+              oneOf:
+                - type: string
+                - type: integer
+            minItems: 2
+            maxItems: 2
+        route_times:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: The size of route_times must be equal to the size of route_order or route_times must be absent. These are the time values between route_order entries, used for cost calculation without additional calls to Valhalla or OSRM.
+        route_distances:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: The size of route_distances must be equal to the size of route_order or route_distances must be absent. These are the distance values between route_order entries, used for cost calculation without additional calls to Valhalla or OSRM.
+      required: [supply_idx]
+
+    Location:
+      type: object
+      description: Location object used in demands.
+      properties:
+        lat:
+          type: number
+          format: float
+        lng:
+          type: number
+          format: float
+        waypoint_id:
+          type: integer
+          default: -1
+        station_id:
+          type: string
+        direction:
+          type: integer
+          default: -1
+      required: [lat, lng]
+
+    OptimizeResponse:
+      type: object
+      description: Response object for optimization results.
+      properties:
+        status:
+          type: integer
+          description: Status code (always 0 for success).
+          default: 0
+        results:
+          type: array
+          description: Array of solution responses.
+          items:
+            $ref: '#/components/schemas/SolutionResponse'
+      required: [status, results]
+
+    SolutionResponse:
+      type: object
+      description: Detailed response for a single solution.
+      properties:
+        vehicle_routes:
+          type: array
+          description: Array of vehicle routes.
+          items:
+            $ref: '#/components/schemas/VehicleRoute'
+        missing:
+          type: array
+          description: Array of missing demands.
+          items:
+            $ref: '#/components/schemas/DemandItem'
+        unacceptables:
+          type: array
+          description: Array of unacceptable demands.
+          items:
+            $ref: '#/components/schemas/DemandItem'
+        total_distance:
+          type: number
+          description: Total distance of the solution.
+        total_time:
+          type: number
+          description: Total time of the solution.
+      required: [vehicle_routes, missing, unacceptables, total_distance, total_time]
+
+    VehicleRoute:
+      type: object
+      description: Route for a specific vehicle.
+      properties:
+        supply_idx:
+          type: string
+          description: Supply index of the vehicle.
+        routes:
+          type: array
+          description: Array of route items (demands).
+          items:
+            $ref: '#/components/schemas/RouteItem'
+      required: [supply_idx, routes]
+
+    RouteItem:
+      type: object
+      description: Individual route item (demand with location).
+      properties:
+        id:
+          type: string
+          description: Demand ID.
+        demand:
+          type: integer
+          description: passenger count value. For pickup, use demand value; for dropoff, use -demand value.
+        loc:
+          $ref: '#/components/schemas/Location'
+        arrival_time:
+          type: integer
+          format: int64
+          description: Arrival time in seconds.
+      required: [id, demand, loc]
+
+    DemandItem:
+      type: object
+      description: Simple demand item for missing/unacceptables.
+      properties:
+        id:
+          type: string
+          description: Demand ID.
+        demand:
+          type: integer
+          description: Demand value.
+      required: [id, demand]
+
+    StatusResponse:
+      type: object
+      description: Simple status response for successful operations.
+      properties:
+        status:
+          type: integer
+          description: Status code (e.g., 0 for success).
+          default: 0
+      required: [status]
+
+    ErrorResponse:
+      type: object
+      description: Error response with status and error message.
+      properties:
+        status:
+          type: integer
+          description: HTTP status code (e.g., 400 for bad request).
+          default: 400
+        error:
+          type: string
+          description: Error message (JSON-escaped string).
+      required: [status, error]

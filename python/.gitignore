@@ -1,0 +1,8 @@
+build/
+dist/
+native/
+*.egg-info/
+*.egg/
+*.dll
+*.dylib
+*.so

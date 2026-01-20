@@ -1,0 +1,6 @@
+.vscode/
+build/
+debug/
+logs/
+ssh_config
+.DS_Store
